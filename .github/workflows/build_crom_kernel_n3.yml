@@ -68,7 +68,7 @@ jobs:
           
           # Define valid combinations with base model only (no _v/_t/_u...)
           declare -A VALID_COMBINATIONS=(
-            ["default"]="mt6983 android12 5.10"
+            ["manifest_crom_n3"]="mt6983 android12 5.10"
           )
 
           # Recursively strip "_[a-z]+" suffixes to match base key
@@ -510,7 +510,7 @@ jobs:
           git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
           echo "Copying Image.gz to Anykernel3_AOSP_NORD3/"
           cp kernel_workspace/out/android12-5.10/kernel-5.10/arch/arm64/boot/Image.gz Anykernel3_AOSP_NORD3/Image.gz
-          
+
       - name: Set zip Suffix
         id: suffix
         run: |
