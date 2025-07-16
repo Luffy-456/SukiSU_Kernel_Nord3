@@ -93,3 +93,8 @@ vendor/oplus/kernel/network/linkpower_module
 vendor/oplus/kernel/network/oplus_network_tuning
 vendor/oplus/kernel/network/oplus_vnet
 "
+
+# Enable ccache
+export PATH="/usr/lib/ccache:$PATH"
+export CC="ccache clang"
+export CXX="ccache clang++"
