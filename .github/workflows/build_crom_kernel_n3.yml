@@ -510,18 +510,7 @@ jobs:
           git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
           echo "Copying Image.gz to Anykernel3_AOSP_NORD3/"
           cp kernel_workspace/out/android12-5.10/kernel-5.10/arch/arm64/boot/Image.gz Anykernel3_AOSP_NORD3/Image.gz
-
-      - name: Apply patch_linux and replace Image
-        if: ${{ github.event.inputs.KPM == 'true' }}
-        run: |
-          cd kernel_workspace/out/android12-5.10/kernel-5.10/arch/arm64/boot/FinalImageFind
-          curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/Numbersf/Action-Build/SukiSU-Ultra/patches/patch_linux
-          chmod +x patch_linux
-          ./patch_linux
-          rm -f Image.gz
-          mv oImage Image.gz
-          cp Image.gz $GITHUB_WORKSPACE/Anykernel3_AOSP_NORD3/Image.gz
-
+          
       - name: Set zip Suffix
         id: suffix
         run: |
