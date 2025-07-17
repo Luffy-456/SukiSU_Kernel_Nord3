@@ -30,6 +30,9 @@ jobs:
           cd downloaded-artifacts
           pwd
           ls
+          cd AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡
+          ls 
+          pwd
       - name: Display Downloaded Artifact Structure
         run: ls -R ./downloaded-artifacts
           ls
