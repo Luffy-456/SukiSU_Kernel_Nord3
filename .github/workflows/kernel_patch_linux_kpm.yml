@@ -64,7 +64,7 @@ jobs:
           mv oImage Image
           echo "ls!!!!!!!!!!"
           ls
-          gzip -9 Image > Image.gz
+          gzip -f -9 Image.gz
           echo "ls!!!!!!!!!!"
           ls
           pwd
