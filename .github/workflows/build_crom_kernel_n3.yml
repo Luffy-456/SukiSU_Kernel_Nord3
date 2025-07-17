@@ -504,7 +504,23 @@ jobs:
           ./build/build.sh
            ccache -s
 
-
+      - name: Apply patch_linux and replace Image
+        if: ${{ github.event.inputs.KPM == 'true' }}
+        run: |
+          pwd
+          echo " going to Image.gz dir"
+          cd kernel_workspace/out/android12-5.10/kernel-5.10/arch/arm64/boot/
+          pwd
+          curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
+          chmod +x patch_linux
+          echo " unpacking Image.gz "
+          gzip -d Image.gz
+          echo " patching "
+          ./patch_linux
+          echo " repacking to Image.gz "
+          gzip -c Image > Image.gz
+          pwd
+          
       - name: Make AnyKernel3_CROM
         run: |
           git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
