@@ -60,7 +60,7 @@ jobs:
           git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
           echo "Copying Image.gz to Anykernel3_AOSP_NORD3/"
           pwd
-          cp Image.gz downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡/Anykernel3_AOSP_NORD3/Image.gz
+          cp downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡/Image.gz Anykernel3_AOSP_NORD3/Image.gz
 
       - name: Upload AnyKernel3_CROM
         uses: actions/upload-artifact@v4
