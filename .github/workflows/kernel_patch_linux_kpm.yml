@@ -49,12 +49,19 @@ jobs:
           pwd
           curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
+          echo "ls!!!!!!!!!"
+          ls
           gzip -d Image.gz
+          echo "ls!!!!!!!!!"
+          ls
           ./patch_linux
           echo "ls!!!!!!!!!"
           ls
           echo "rm Image.gz!!!!!!!!!"
-          rm Image.gz
+          rm -f Image.gz
+          echo "ls!!!!!!!!!!"
+          ls
+          mv oImage Image
           echo "ls!!!!!!!!!!"
           ls
           gzip -9 Image > Image.gz
