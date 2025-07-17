@@ -51,7 +51,7 @@ jobs:
           chmod +x patch_linux
           gzip -d Image.gz
           ./patch_linux
-          gzip -c Image > Image.gz
+          gzip -9 Image > Image.gz
           pwd
 
       - name: Make AnyKernel3_CROM
