@@ -45,7 +45,7 @@ jobs:
       - name: Apply patch_linux and replace Image
         run: |
           pwd
-          cd ./downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡
+          cd downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡
           pwd
           curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
