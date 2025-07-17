@@ -13,6 +13,9 @@ jobs:
     permissions:
       contents: write
       actions: read
+    env:
+      # Set the token once for all steps in the job
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout Repository
