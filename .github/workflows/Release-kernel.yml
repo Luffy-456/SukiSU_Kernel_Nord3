@@ -54,6 +54,7 @@ jobs:
       - name: Create GitHub Release and Upload Zips
         env:
           RELEASE_NOTES: |
+            # KPM FIX RELEASE!!!!!!
             ### SukiSU Ultra Kernel for ${{ inputs.device_name }}
             
             #### Flash this kernel on AOSP 
