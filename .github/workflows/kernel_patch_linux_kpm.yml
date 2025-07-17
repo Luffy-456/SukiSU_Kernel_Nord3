@@ -1,4 +1,4 @@
-name: Create Kernel Release
+name: Patch_Kernel_KPM
 on:
   workflow_dispatch:
     inputs:
