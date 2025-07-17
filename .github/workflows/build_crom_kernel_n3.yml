@@ -505,20 +505,30 @@ jobs:
            ccache -s
 
       - name: Apply patch_linux and replace Image
-        if: ${{ github.event.inputs.KPM == 'true' }}
         run: |
           pwd
-          echo " going to Image.gz dir"
           cd kernel_workspace/out/android12-5.10/kernel-5.10/arch/arm64/boot/
           pwd
           curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
-          echo " unpacking Image.gz "
+          echo "ls!!!!!!!!!"
+          ls
           gzip -d Image.gz
-          echo " patching "
+          echo "ls!!!!!!!!!"
+          ls
           ./patch_linux
-          echo " repacking to Image.gz "
-          gzip -c Image > Image.gz
+          echo "ls!!!!!!!!!"
+          ls
+          echo "rm Image.gz!!!!!!!!!"
+          rm -f Image.gz
+          echo "ls!!!!!!!!!!"
+          ls
+          mv oImage Image
+          echo "ls!!!!!!!!!!"
+          ls
+          gzip -f -9 Image
+          echo "ls!!!!!!!!!!"
+          ls
           pwd
           
       - name: Make AnyKernel3_CROM
