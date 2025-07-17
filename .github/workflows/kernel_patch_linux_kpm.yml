@@ -30,9 +30,11 @@ jobs:
         run: |
           pwd
           ls
+          echo "cd downloaded-artifacts!!!!!!!!!!!!!"
           cd downloaded-artifacts
           pwd
           ls
+          echo "cd AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡!!!!!!!!!!!!!"
           cd AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡
           ls 
           pwd
