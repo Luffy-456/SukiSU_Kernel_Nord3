@@ -1,0 +1,48 @@
+name: Create Kernel Release
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'The ID of the successful build run to release from'
+        required: true
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts via GitHub CLI
+        run: |
+          echo "Downloading artifacts for Run ID ${{ inputs.run_id }}..."
+          gh run download ${{ inputs.run_id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
+      - name: Display Downloaded Artifact Structure
+        run: ls -R ./downloaded-artifacts
+
+      - name: Apply patch_linux and replace Image
+        if: ${{ github.event.inputs.KPM == 'true' }}
+        run: |
+          cd kernel_workspace/kernel_platform/out/FinalImageFind
+          curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
+          chmod +x patch_linux
+          gzip -d Image.gz
+          ./patch_linux
+          gzip -c Image > Image.gz
+
+      - name: Make AnyKernel3_CROM
+        run: |
+          git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
+          echo "Copying Image.gz to Anykernel3_AOSP_NORD3/"
+          cp Image.gz  $GITHUB_WORKSPACE/Anykernel3_AOSP_NORD3/Image.gz
+
+      - name: Upload AnyKernel3_CROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: KPM_PATCHED_AnyKernel3_CROM_${{ env.KSUVER }}_${{ steps.file_clean.outputs.value }}${{ steps.suffix.outputs.value }}_LuffyOP⚡
+          path: ./Anykernel3_AOSP_NORD3/*
