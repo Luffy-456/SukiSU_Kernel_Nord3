@@ -27,7 +27,9 @@ jobs:
           gh run download ${{ inputs.run_id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
           pwd
       - name: Display Downloaded Artifact Structure
-        run: ls -R ./downloaded-artifacts
+        run: 
+          pwd
+          ls -R ./downloaded-artifacts
 
       - name: Apply patch_linux and replace Image
         run: |
