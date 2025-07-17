@@ -25,13 +25,14 @@ jobs:
         run: |
           echo "Downloading artifacts for Run ID ${{ inputs.run_id }}..."
           gh run download ${{ inputs.run_id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
+          pwd
       - name: Display Downloaded Artifact Structure
         run: ls -R ./downloaded-artifacts
 
       - name: Apply patch_linux and replace Image
         run: |
           pwd
-          cd kernel_workspace/out/android12-5.10/kernel-5.10/arch/arm64/boot/
+          cd /downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡/
           pwd
           curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
