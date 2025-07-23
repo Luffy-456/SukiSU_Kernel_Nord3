@@ -5,6 +5,9 @@ on:
       run_id:
         description: 'The ID of the successful build run to release from'
         required: true
+      artifact_name:
+        description: 'Give the name of the artifact'
+        required: true
 
 jobs:
   release:
@@ -34,8 +37,8 @@ jobs:
           cd downloaded-artifacts
           pwd
           ls
-          echo "cd AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡!!!!!!!!!!!!!"
-          cd AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡
+          echo "cd ${{ inputs.artifact_name }}!!!!!!!!!!!!!"
+          cd ${{ inputs.artifact_name }}
           ls 
           pwd
           
@@ -45,7 +48,7 @@ jobs:
       - name: Apply patch_linux and replace Image
         run: |
           pwd
-          cd downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡
+          cd downloaded-artifacts/${{ inputs.artifact_name }}
           pwd
           curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
@@ -75,10 +78,10 @@ jobs:
           git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
           echo "Copying Image.gz to Anykernel3_AOSP_NORD3/"
           pwd
-          cp downloaded-artifacts/AnyKernel3_CROM_13239__VFS_KPM_LuffyOP⚡/Image.gz Anykernel3_AOSP_NORD3/Image.gz
+          cp downloaded-artifacts/${{ inputs.artifact_name }}/Image.gz Anykernel3_AOSP_NORD3/Image.gz
 
       - name: Upload AnyKernel3_CROM
         uses: actions/upload-artifact@v4
         with:
-          name: KPM_PATCHED_AnyKernel3_CROM_LuffyOP⚡
+          name: ${{ inputs.artifact_name }}
           path: ./Anykernel3_AOSP_NORD3/*
