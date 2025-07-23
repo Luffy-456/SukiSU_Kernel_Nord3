@@ -254,13 +254,13 @@ jobs:
       - name: Initialize Repo and Sync
         run: |
           mkdir kernel_workspace && cd kernel_workspace
-          repo init -u https://github.com/darklord4567/test.git -m ${{ github.event.inputs.FILE }}.xml --depth=1
+          repo init -u https://github.com/Luffy-456/SukiSU_Kernel_Nord3 -m ${{ github.event.inputs.FILE }}.xml --depth=1
           repo sync -c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync
 
 
       - name: Copy and Rename Build Configuration
         run: |
-          git clone https://github.com/darklord4567/test.git kernel_workflow
+          git clone https://github.com/Luffy-456/SukiSU_Kernel_Nord3.git kernel_workflow
           cp -v kernel_workflow/build.config.oplus6983-d kernel_workspace/kernel-5.10/
           echo "pwd cmd!!!!!!!!!!!"
           pwd
