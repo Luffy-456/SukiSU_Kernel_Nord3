@@ -1,87 +1,117 @@
 name: Patch_Kernel_KPM
+
 on:
-  workflow_dispatch:
-    inputs:
-      run_id:
-        description: 'The ID of the successful build run to release from'
-        required: true
-      artifact_name:
-        description: 'Give the name of the artifact'
-        required: true
+  workflow_run:
+    workflows:
+      - "Build OnePlus Nord 3 Stock"
+      - "Build OnePlus Nord 3 Crom"
+    types:
+      - completed
 
 jobs:
+  # This new job checks the result of the triggering workflow first
+  check_trigger:
+    name: Verify Build Result
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if build was successful
+        if: github.event.workflow_run.conclusion != 'success'
+        run: |
+          echo "Triggering workflow was not successful (conclusion: ${{ github.event.workflow_run.conclusion }}). Stopping."
+          exit 1
   release:
     name: Create Release
+    needs: check_trigger
     runs-on: ubuntu-latest
     permissions:
       contents: write
       actions: read
     env:
-      # Set the token once for all steps in the job
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+      - name: Get current time
+        id: get_time
+        run: echo "timestamp=$(TZ='Asia/Kolkata' date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+
+      - name: Send Start Notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID_PERSONAL }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            *🚀 Patching KPM Workflow Started*
+
+            *Triggered by build run:* #${{ github.event.workflow_run.id }}
+            *Patching Run Link:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            *Started at:* `${{ steps.get_time.outputs.timestamp }}` IST
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Artifacts via GitHub CLI
+      - name: Download Artifacts from Completed Build
         run: |
-          echo "Downloading artifacts for Run ID ${{ inputs.run_id }}..."
-          gh run download ${{ inputs.run_id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
+          gh run download ${{ github.event.workflow_run.id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
       
-      - name: Debug 
+      - name: Find Artifact Name
+        id: find_artifact
         run: |
-          pwd
-          ls
-          echo "cd downloaded-artifacts!!!!!!!!!!!!!"
-          cd downloaded-artifacts
-          pwd
-          ls
-          echo "cd ${{ inputs.artifact_name }}!!!!!!!!!!!!!"
-          cd ${{ inputs.artifact_name }}
-          ls 
-          pwd
-          
-      - name: Display Downloaded Artifact Structure
-        run: ls -R ./downloaded-artifacts
+          ARTIFACT_DIR=$(ls -d ./downloaded-artifacts/*/)
+          ARTIFACT_NAME=$(basename "$ARTIFACT_DIR")
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
       - name: Apply patch_linux and replace Image
         run: |
-          pwd
-          cd downloaded-artifacts/${{ inputs.artifact_name }}
-          pwd
-          curl -LO --retry 5 --retry-delay 2 --retry-connrefused https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
+          cd downloaded-artifacts/${{ steps.find_artifact.outputs.artifact_name }}
+          curl -LO --retry 5 https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
-          echo "ls!!!!!!!!!"
-          ls
           gzip -d Image.gz
-          echo "ls!!!!!!!!!"
-          ls
           ./patch_linux
-          echo "ls!!!!!!!!!"
-          ls
-          echo "rm Image.gz!!!!!!!!!"
           rm -f Image.gz
-          echo "ls!!!!!!!!!!"
-          ls
           mv oImage Image
-          echo "ls!!!!!!!!!!"
-          ls
           gzip -f -9 Image
-          echo "ls!!!!!!!!!!"
-          ls
-          pwd
 
-      - name: Make AnyKernel3_CROM
+      - name: Make AnyKernel3 ZIP
         run: |
-          pwd
-          git clone https://github.com/darklord4567/Anykernel3_AOSP_NORD3.git --depth=1
-          echo "Copying Image.gz to Anykernel3_AOSP_NORD3/"
-          pwd
-          cp downloaded-artifacts/${{ inputs.artifact_name }}/Image.gz Anykernel3_AOSP_NORD3/Image.gz
+          git clone https://github.com/darklord4567/Anykernel3_STOCK_NORD3 --depth=1
+          cp downloaded-artifacts/${{ steps.find_artifact.outputs.artifact_name }}/Image.gz Anykernel3_STOCK_NORD3/Image.gz
 
-      - name: Upload AnyKernel3_CROM
+      - name: Upload Patched Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.artifact_name }}
-          path: ./Anykernel3_AOSP_NORD3/*
+          name: ${{ steps.find_artifact.outputs.artifact_name }}
+          path: ./Anykernel3_STOCK_NORD3/*
+
+  notify_result:
+    name: Notify Patch Status
+    needs: release
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on Success
+        if: ${{ needs.release.result == 'success' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID_PRIVATE2 }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            *✅ Patching Successful*
+            ------------------------------------
+            The patched kernel artifact is ready. Starting the final `Create Kernel Release` workflow.
+
+      - name: Notify on Failure, Cancellation, or Skip
+        # This condition now checks for all non-success outcomes
+        if: ${{ needs.release.result == 'failure' || needs.release.result == 'cancelled' || needs.release.result == 'skipped' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID_PERSONAL }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            *❌ Patching Workflow Did Not Complete*
+            ------------------------------------
+            The patching process was not successful (Status: ${{ needs.release.result }}).
+            The release process will not start.
+            [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
