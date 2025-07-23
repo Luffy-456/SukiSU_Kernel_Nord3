@@ -9,6 +9,7 @@ on:
       - completed
 
 jobs:
+  # This new job checks the result of the triggering workflow first
   check_trigger:
     name: Verify Build Result
     runs-on: ubuntu-latest
@@ -19,7 +20,7 @@ jobs:
           echo "Triggering workflow was not successful (conclusion: ${{ github.event.workflow_run.conclusion }}). Stopping."
           exit 1
   release:
-    name: Patch Kernel # Changed name for clarity
+    name: Create Release
     needs: check_trigger
     runs-on: ubuntu-latest
     permissions:
@@ -27,6 +28,7 @@ jobs:
       actions: read
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Get current time
         id: get_time
@@ -97,9 +99,10 @@ jobs:
           message: |
             *✅ Patching Successful*
             ------------------------------------
-            The patched kernel artifact is ready. Sending signal to start the final release workflow...
+            The patched kernel artifact is ready. Starting the final `Create Kernel Release` workflow.
 
       - name: Notify on Failure, Cancellation, or Skip
+        # This condition now checks for all non-success outcomes
         if: ${{ needs.release.result == 'failure' || needs.release.result == 'cancelled' || needs.release.result == 'skipped' }}
         uses: appleboy/telegram-action@master
         with:
@@ -112,22 +115,3 @@ jobs:
             The patching process was not successful (Status: ${{ needs.release.result }}).
             The release process will not start.
             [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-  trigger_release:
-    name: Trigger Final Release
-    needs: release # Runs after the 'release' job is done
-    if: success()  # Only runs if the 'release' job was successful
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send repository_dispatch event to trigger release
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }} # IMPORTANT: Requires a special PAT token
-        run: |
-          echo "Sending signal to trigger the release workflow..."
-          curl -L \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
-            -d '{"event_type":"trigger-release","client_payload":{"run_id":${{ github.run_id }}}}'
