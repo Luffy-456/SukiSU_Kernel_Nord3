@@ -2,7 +2,7 @@ name: Create Kernel Release
 
 on:
   workflow_run:
-    workflows: ["Build OnePlus Nord 4 SukiSU Ultra "]
+    workflows: ["Patch_Kernel_KPM"]
     types:
       - completed
 
