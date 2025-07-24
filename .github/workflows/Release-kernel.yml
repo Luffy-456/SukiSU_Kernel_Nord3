@@ -1,6 +1,4 @@
-name: Create Kernel Release
-
-# This workflow is triggered manually
+name: Create Kernel Release GitHub
 on:
   workflow_dispatch:
     inputs:
@@ -21,6 +19,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       release_tag: ${{ steps.generate_tag.outputs.tag }}
+      release_notes: ${{ steps.prep_notes.outputs.notes }} # <-- CHANGE: Added output for release notes
 
     steps:
       - name: 1. Parse Run ID from URL
@@ -74,34 +73,41 @@ jobs:
               (cd "$dir" && zip -r9 "$GITHUB_WORKSPACE/final-zips/${ARTIFACT_NAME}.zip" .)
             fi
           done
+      
+      # <-- CHANGE: New step to prepare notes for both release and notification
+      - name: 8. Prepare Release Notes for Output
+        id: prep_notes
+        run: |
+          NOTES=$(cat <<'EOF'
+          ### SukiSU Ultra Kernel for OnePlus Nord 3
+          
+          #### Flash this kernel on 15.0.0.901 & 1101
+          
+          **Flasher Recommendation:**
+          * [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)
+          
+          **Manager App:**
+          * [SukiSU-Ultra Manager](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
 
-      - name: 8. Create GitHub Release and Upload Zips
-        env:
-          RELEASE_NOTES: |
-            
-            ### SukiSU Ultra Kernel for OnePlus Nord 3
-            
-            #### Flash this kernel on 15.0.0.901 & 1101
-            
-            **Flasher Recommendation:**
-            * [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)
-            
-            **Manager App:**
-            * [SukiSU-Ultra Manager](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
+          **Sufs Module:**
+          * [Susfs Module](https://github.com/sidex15/susfs4ksu-module/releases)
+          EOF
+          )
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-            **Sufs Module:**
-            * [Susfs Module](https://github.com/sidex15/susfs4ksu-module/releases)
+      - name: 9. Create GitHub Release and Upload Zips
         run: |
           gh release create "${{ steps.generate_tag.outputs.tag }}" \
             --title "Kernel Release - $(date +'%d %B %Y')" \
-            --notes "$RELEASE_NOTES" \
+            --notes "${{ steps.prep_notes.outputs.notes }}" \
             ./final-zips/*.zip
   
-  # This second job sends the final notification
   notify_result:
     name: Notify Final Release Status
     needs: release
-    if: always() # This ensures it runs even if the release job fails
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Send Final Release Notification
@@ -110,17 +116,20 @@ jobs:
           to: ${{ needs.release.result == 'success' && secrets.TELEGRAM_CHAT_ID_LUFFYOP_UPDATES || secrets.TELEGRAM_CHAT_ID_PERSONAL }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
+          # <-- CHANGE: This entire message block has been fixed
           message: |
             ${{ needs.release.result == 'success' && format('🎉 *New Kernel Release!*
             ------------------------------------
-            A new kernel for *OnePlus Nord 3* has been successfully built, and released.
+            A new kernel for *OnePlus Nord 3* has been successfully released.
+
+            {2}
 
             *Release Tag:* `{0}`
             ------------------------------------
-            [⬇️ Download from GitHub Releases](https://github.com/{1}/releases/tag/{0})', needs.release.outputs.release_tag, github.repository) || '' }}
+            [⬇️ Download from GitHub Releases](https://github.com/{1}/releases/tag/{0})', needs.release.outputs.release_tag, github.repository, needs.release.outputs.release_notes) || '' }}
 
             ${{ needs.release.result == 'failure' && format('❌ *Release Failed!*
             ------------------------------------
-            The final step of creating the GitHub Release failed. Check logs for details.
+            The final step of creating the GitHub Release failed. Check the logs for details.
             [View Logs](https://github.com/{0}/actions/runs/{1})', github.repository, github.run_id) || '' }}
-            
+
