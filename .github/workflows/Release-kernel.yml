@@ -12,14 +12,14 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # To create releases
-      actions: read    # To download artifacts from other runs
+      contents: write
+      actions: read
     env:
       TZ: Asia/Kolkata
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       release_tag: ${{ steps.generate_tag.outputs.tag }}
-      release_notes: ${{ steps.prep_notes.outputs.notes }} # <-- CHANGE: Added output for release notes
+      telegram_notes: ${{ steps.prep_telegram_notes.outputs.notes }} # <-- CHANGE: Outputting the special Telegram notes
 
     steps:
       - name: 1. Parse Run ID from URL
@@ -74,9 +74,9 @@ jobs:
             fi
           done
       
-      # <-- CHANGE: New step to prepare notes for both release and notification
-      - name: 8. Prepare Release Notes for Output
-        id: prep_notes
+      # <-- CHANGE: This step now ONLY prepares notes for the GitHub Release page.
+      - name: 8. Prepare GitHub Release Notes
+        id: prep_github_notes
         run: |
           NOTES=$(cat <<'EOF'
           ### SukiSU Ultra Kernel for OnePlus Nord 3
@@ -97,11 +97,35 @@ jobs:
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: 9. Create GitHub Release and Upload Zips
+      # <-- CHANGE: This is a NEW step to prepare the separate, Telegram-safe notes.
+      - name: 9. Prepare Telegram Notification Notes
+        id: prep_telegram_notes
+        run: |
+          NOTES=$(cat <<'EOF'
+          *SukiSU Ultra Kernel for OnePlus Nord 3*
+          
+          *Flash this kernel on 15.0.0.901 & 1101*
+          
+          *Flasher Recommendation:*
+          • [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)
+          
+          *Manager App:*
+          • [SukiSU-Ultra Manager](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
+
+          *Sufs Module:*
+          • [Susfs Module](https://github.com/sidex15/susfs4ksu-module/releases)
+          EOF
+          )
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # <-- CHANGE: This step now uses the GitHub-specific notes from step 8.
+      - name: 10. Create GitHub Release and Upload Zips
         run: |
           gh release create "${{ steps.generate_tag.outputs.tag }}" \
             --title "Kernel Release - $(date +'%d %B %Y')" \
-            --notes "${{ steps.prep_notes.outputs.notes }}" \
+            --notes "${{ steps.prep_github_notes.outputs.notes }}" \
             ./final-zips/*.zip
   
   notify_result:
@@ -116,7 +140,7 @@ jobs:
           to: ${{ needs.release.result == 'success' && secrets.TELEGRAM_CHAT_ID_LUFFYOP_UPDATES || secrets.TELEGRAM_CHAT_ID_PERSONAL }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
-          # <-- CHANGE: This entire message block has been fixed
+          # <-- CHANGE: The message now correctly uses the special 'telegram_notes' output.
           message: |
             ${{ needs.release.result == 'success' && format('🎉 *New Kernel Release!*
             ------------------------------------
@@ -126,10 +150,10 @@ jobs:
 
             *Release Tag:* `{0}`
             ------------------------------------
-            [⬇️ Download from GitHub Releases](https://github.com/{1}/releases/tag/{0})', needs.release.outputs.release_tag, github.repository, needs.release.outputs.release_notes) || '' }}
+            [⬇️ Download from GitHub Releases](https://github.com/{1}/releases/tag/{0})', needs.release.outputs.release_tag, github.repository, needs.release.outputs.telegram_notes) || '' }}
 
             ${{ needs.release.result == 'failure' && format('❌ *Release Failed!*
             ------------------------------------
             The final step of creating the GitHub Release failed. Check the logs for details.
             [View Logs](https://github.com/{0}/actions/runs/{1})', github.repository, github.run_id) || '' }}
-
+            
