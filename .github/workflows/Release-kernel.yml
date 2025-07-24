@@ -113,7 +113,7 @@ jobs:
           message: |
             ${{ needs.release.result == 'success' && format('🎉 *New Kernel Release!*
             ------------------------------------
-            A new kernel has been successfully built, patched, and released.
+            A new kernel for *OnePlus Nord 3* has been successfully built, and released.
 
             *Release Tag:* `{0}`
             ------------------------------------
