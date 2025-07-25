@@ -9,7 +9,6 @@ on:
       - completed
 
 jobs:
-  # This new job checks the result of the triggering workflow first
   check_trigger:
     name: Verify Build Result
     runs-on: ubuntu-latest
@@ -19,6 +18,7 @@ jobs:
         run: |
           echo "Triggering workflow was not successful (conclusion: ${{ github.event.workflow_run.conclusion }}). Stopping."
           exit 1
+
   release:
     name: Create Release
     needs: check_trigger
@@ -41,11 +41,12 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
           message: |
-            *🚀 Patching KPM Workflow Started*
+            🚀 **KPM Patching Workflow Started**
 
-            *Triggered by build run:* #${{ github.event.workflow_run.id }}
-            *Patching Run Link:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            *Started at:* `${{ steps.get_time.outputs.timestamp }}` IST
+            ━━━━━━━━━━━━━━━━━━━━
+            🛠️ Triggered by build run: #${{ github.event.workflow_run.id }}
+            🔗 [Patching Run Link](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🕒 Started at: `${{ steps.get_time.outputs.timestamp }}` IST
 
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -53,7 +54,7 @@ jobs:
       - name: Download Artifacts from Completed Build
         run: |
           gh run download ${{ github.event.workflow_run.id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
-      
+
       - name: Find Artifact Name
         id: find_artifact
         run: |
@@ -97,21 +98,58 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
           message: |
-            *✅ Patching Successful*
-            ------------------------------------
-            The patched kernel artifact is ready. Starting the final `Create Kernel Release` workflow.
+            🎉 **KPM Patching Complete!**
 
-      - name: Notify on Failure, Cancellation, or Skip
-        # This condition now checks for all non-success outcomes
-        if: ${{ needs.release.result == 'failure' || needs.release.result == 'cancelled' || needs.release.result == 'skipped' }}
+            ━━━━━━━━━━━━━━━━━━━━
+            ✅ The kernel has been patched successfully and is ready for release!
+
+            ➡️ Final step: Creating the Kernel Release.
+
+      - name: Notify on Failure
+        if: ${{ needs.release.result == 'failure' }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID_PERSONAL }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
           message: |
-            *❌ Patching Workflow Did Not Complete*
-            ------------------------------------
-            The patching process was not successful (Status: ${{ needs.release.result }}).
-            The release process will not start.
-            [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ❌ **KPM Patching Failed**
+
+            ━━━━━━━━━━━━━━━━━━━━
+            The patching process encountered an error.
+            Status: `failure`
+
+            🔍 Please review build logs for more details.
+            [🗂️ View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Notify on Cancellation
+        if: ${{ needs.release.result == 'cancelled' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID_PERSONAL }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ⚠️ **KPM Patching Cancelled**
+
+            ━━━━━━━━━━━━━━━━━━━━
+            The patching process was **cancelled** by user/site.
+
+            No artifacts were released.
+            [🗂️ View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Notify on Skipped
+        if: ${{ needs.release.result == 'skipped' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID_PERSONAL }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ⏭️ **KPM Patching Skipped**
+
+            ━━━━━━━━━━━━━━━━━━━━
+            This patching workflow was **skipped** and did not proceed.
+
+            No changes were made.
+            [🗂️ View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
