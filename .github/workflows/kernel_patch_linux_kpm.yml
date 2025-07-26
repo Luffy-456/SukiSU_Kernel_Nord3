@@ -20,7 +20,7 @@ jobs:
           exit 1
 
   release:
-    name: Create Release
+    name: Patch Kernel
     needs: check_trigger
     runs-on: ubuntu-latest
     permissions:
