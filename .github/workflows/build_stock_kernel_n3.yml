@@ -16,7 +16,7 @@ on:
         type: string
         description: "Custom kernel suffix (leave empty for a random string)"
         required: false
-        default: "LuffyOP⚡"
+        default: "Nika⚡_Kernel"
       FAST_BUILD:
         type: boolean
         description: "Enable fast build?"
