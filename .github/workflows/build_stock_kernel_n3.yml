@@ -658,7 +658,7 @@ jobs:
       - name: Upload AnyKernel3_STOCK
         uses: actions/upload-artifact@v4
         with:
-          name: "Nika Kernel For OnePlusNord 3_STOCK${{ steps.suffix.outputs.value }} by LuffyOP⚡"
+          name: "Nika_Kernel_For_OnePlusNord_3_STOCK${{ steps.suffix.outputs.value }}_by_LuffyOP⚡"
           path: ./Anykernel3_STOCK_NORD3/*
 
       - name: Post-build Disk Check
