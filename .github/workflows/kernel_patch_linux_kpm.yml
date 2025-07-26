@@ -1,6 +1,7 @@
 name: Patch_Kernel_KPM
 
 on:
+  # AUTOMATIC TRIGGER: Runs when the specified build workflows complete.
   workflow_run:
     workflows:
       - "Build OnePlus Nord 3 Stock"
@@ -8,9 +9,20 @@ on:
     types:
       - completed
 
+  # MANUAL TRIGGER: Allows running this workflow from the Actions tab.
+  workflow_dispatch:
+    inputs:
+      run_url:
+        description: 'URL of the completed build run to patch'
+        required: true
+        type: string
+
 jobs:
+  # This job only runs for the automatic 'workflow_run' trigger.
+  # It verifies that the build which triggered this patcher was successful.
   check_trigger:
     name: Verify Build Result
+    if: github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
     steps:
       - name: Check if build was successful
@@ -22,6 +34,10 @@ jobs:
   release:
     name: Patch Kernel
     needs: check_trigger
+    # This 'if' condition ensures the release job runs for:
+    # 1. Manual triggers ('workflow_dispatch').
+    # 2. Automatic triggers ('workflow_run') ONLY IF the 'check_trigger' job succeeded.
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.check_trigger.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -44,7 +60,7 @@ jobs:
             🚀 **KPM Patching Workflow Started**
 
             ━━━━━━━━━━━━━━━━━━━━
-            🛠️ Triggered by build run: #${{ github.event.workflow_run.id }}
+            🛠️ Triggered by: `${{ github.event_name }}`
             🔗 [Patching Run Link](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             🕒 Started at: `${{ steps.get_time.outputs.timestamp }}` IST
 
@@ -53,18 +69,34 @@ jobs:
 
       - name: Download Artifacts from Completed Build
         run: |
-          gh run download ${{ github.event.workflow_run.id }} --dir ./downloaded-artifacts --repo ${{ github.repository }}
+          # Determine the Run ID based on the trigger type (automatic vs. manual)
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            echo "Triggered automatically. Using Run ID: $RUN_ID"
+          else
+            RUN_URL="${{ github.event.inputs.run_url }}"
+            # Extracts the ID from the end of the URL
+            RUN_ID=$(basename "$RUN_URL")
+            echo "Triggered manually. Using URL: $RUN_URL"
+            echo "Extracted Run ID: $RUN_ID"
+          fi
+          
+          # Download the artifact using the determined Run ID
+          gh run download "$RUN_ID" --dir ./downloaded-artifacts --repo ${{ github.repository }}
 
       - name: Find Artifact Name
         id: find_artifact
         run: |
+          # Finds the artifact directory name, which can contain spaces
           ARTIFACT_DIR=$(ls -d ./downloaded-artifacts/*/)
           ARTIFACT_NAME=$(basename "$ARTIFACT_DIR")
+          echo "Found artifact: $ARTIFACT_NAME"
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
       - name: Apply patch_linux and replace Image
         run: |
-          cd downloaded-artifacts/${{ steps.find_artifact.outputs.artifact_name }}
+          # The path is quoted to handle spaces in the artifact name
+          cd "downloaded-artifacts/${{ steps.find_artifact.outputs.artifact_name }}"
           curl -LO --retry 5 https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/main/kpm/patch_linux
           chmod +x patch_linux
           gzip -d Image.gz
@@ -76,7 +108,8 @@ jobs:
       - name: Make AnyKernel3 ZIP
         run: |
           git clone https://github.com/darklord4567/Anykernel3_STOCK_NORD3 --depth=1
-          cp downloaded-artifacts/${{ steps.find_artifact.outputs.artifact_name }}/Image.gz Anykernel3_STOCK_NORD3/Image.gz
+          # The path is quoted to handle spaces in the artifact name
+          cp "downloaded-artifacts/${{ steps.find_artifact.outputs.artifact_name }}/Image.gz" Anykernel3_STOCK_NORD3/Image.gz
 
       - name: Upload Patched Artifact
         uses: actions/upload-artifact@v4
@@ -84,10 +117,11 @@ jobs:
           name: ${{ steps.find_artifact.outputs.artifact_name }}
           path: ./Anykernel3_STOCK_NORD3/*
 
+  # This job notifies you of the final status (success, failure, etc.)
   notify_result:
     name: Notify Patch Status
     needs: release
-    if: always()
+    if: always() # This ensures notifications are always sent
     runs-on: ubuntu-latest
     steps:
       - name: Notify on Success
@@ -99,10 +133,8 @@ jobs:
           format: markdown
           message: |
             🎉 **KPM Patching Complete!**
-
             ━━━━━━━━━━━━━━━━━━━━
             ✅ The kernel has been patched successfully and is ready for release!
-
             ➡️ Final step: Creating the Kernel Release.
 
       - name: Notify on Failure
@@ -114,11 +146,9 @@ jobs:
           format: markdown
           message: |
             ❌ **KPM Patching Failed**
-
             ━━━━━━━━━━━━━━━━━━━━
             The patching process encountered an error.
             Status: `failure`
-
             🔍 Please review build logs for more details.
             [🗂️ View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
@@ -131,11 +161,8 @@ jobs:
           format: markdown
           message: |
             ⚠️ **KPM Patching Cancelled**
-
             ━━━━━━━━━━━━━━━━━━━━
-            The patching process was **cancelled** by user/site.
-
-            No artifacts were released.
+            The patching process was **cancelled**.
             [🗂️ View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify on Skipped
@@ -147,9 +174,6 @@ jobs:
           format: markdown
           message: |
             ⏭️ **KPM Patching Skipped**
-
             ━━━━━━━━━━━━━━━━━━━━
-            This patching workflow was **skipped** and did not proceed.
-
-            No changes were made.
+            This patching workflow was **skipped** (likely due to a failed build).
             [🗂️ View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
