@@ -639,6 +639,12 @@ jobs:
           ls
           export PATH="/usr/lib/ccache:$PATH"
           export CC="ccache clang"
+          sudo rm -f /usr/local/bin/clang /usr/local/bin/clang++ /usr/local/bin/gcc /usr/local/bin/g++
+          sudo ln -s $(which ccache) /usr/local/bin/clang
+          sudo ln -s $(which ccache) /usr/local/bin/clang++
+          sudo ln -s $(which ccache) /usr/local/bin/gcc
+          sudo ln -s $(which ccache) /usr/local/bin/g++
+
           ./build/build.sh
            ccache -s
 
