@@ -411,6 +411,42 @@ jobs:
           sed -i 's/^EXPORT_SYMBOL(accdet_read_audio_res);/EXPORT_SYMBOL(mt6357_accdet_read_audio_res);/' mt6357-accdet.c
           grep -E 'mt6357_accdet_read_audio_res' mt6357-accdet.c
 
+      - name: Apply Battery file
+        run: |
+          echo "pwd!!!!!!!!!!!!"
+          pwd
+          echo "ls!!!!!!!!!!!!"
+          ls
+          echo " del old file !!!!!!!!!!"
+          echo " cd kernel_workspace/kernel-5.10/drivers/regulator !!!!!!!!!!!"
+          cd kernel_workspace/kernel-5.10/drivers/regulator/
+          echo "pwd!!!!!!!!!!!!"
+          pwd
+          echo "ls!!!!!!!!!!!!"
+          ls
+          echo " del mtk-dvfsrc-regulator.c !!!!!!!!!!!!"
+          rm mtk-dvfsrc-regulator.c
+          echo "pwd!!!!!!!!!!!!"
+          pwd
+          echo "ls!!!!!!!!!!!!"
+          ls
+          echo " cd kernel_workspace & one back "
+          cd ../../../..
+          echo "pwd!!!!!!!!!!!!"
+          pwd
+          echo "ls!!!!!!!!!!!!"
+          ls
+          echo " copy new battery file !!!!!!!!!!!!"
+          cp -v kernel_workflow/mtk-dvfsrc-regulator.c kernel_workspace/kernel-5.10/drivers/regulator/
+          echo " cd kernel_workspace/kernel-5.10/drivers/regulator !!!!!!!!!!!"
+          cd kernel_workspace/kernel-5.10/drivers/regulator/
+          echo "pwd!!!!!!!!!!!!"
+          pwd
+          echo "ls!!!!!!!!!!!!"
+          ls
+
+        
+
 
       # Custom kernel suffix
       - name: Custom Kernel Suffix if set
